@@ -30,7 +30,7 @@ const Canvas = ({ elements, setElements }) => {
           : {
               width: '100px',
               height: '100px',
-              backgroundColor: '#009FED', // Set background color for rectangle
+              backgroundColor: '#db9b9b', // Set background color for rectangle
               borderRadius: '0px', // Set default border radius for rectangle
               border: '1px solid #000000', // Set default border for rectangle
               boxShadow: '0px 0px 0px #000000', // Set default box shadow for rectangle
