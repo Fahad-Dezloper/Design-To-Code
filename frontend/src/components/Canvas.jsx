@@ -10,40 +10,29 @@ const Canvas = ({ elements, setElements }) => {
   const canvasRef = useRef(null);
   const panelRef = useRef(null);
 
-  const addElement = useCallback((type) => {
+  // Function to add a new rectangle element
+  const addElement = useCallback(() => {
     setElements((prevElements) => [
       ...prevElements,
       {
         id: Date.now(),
-        type,
-        style: type === 'text'
-          ? {
-              width: '100px', // Set a default width for text elements
-              height: '100px', // Set a default height for text elements
-              "font-size": '16px',
-              "font-family": 'Arial',
-              color: '#000000',
-              "background-color": 'transparent', // Ensure transparency for text
-              border: 'none', // No border for text
-              "box-shadow": 'none', // No box shadow for text
-            }
-          : {
-              width: '100px',
-              height: '100px',
-              backgroundColor: '#db9b9b', // Set background color for rectangle
-              borderRadius: '0px', // Set default border radius for rectangle
-              border: '1px solid #000000', // Set default border for rectangle
-              boxShadow: '0px 0px 0px #000000', // Set default box shadow for rectangle
-              fontSize: '16px', // Default font size (can be overridden)
-              fontFamily: 'Arial', // Default font family (can be overridden)
-              color: '#000000', // Default color (can be overridden)
-            },
-        content: type === 'text' ? 'Text' : '', // Set default text content if needed
+        type: 'rectangle', // Default to rectangle
+        style: {
+          width: '100px',
+          height: '100px',
+          backgroundColor: '#db9b9b',
+          borderRadius: '0px',
+          border: '1px solid #000000',
+          boxShadow: "0px 0px 0px #000000",
+          color: '#000000',
+        },
+        content: '', // No content for rectangle
         selected: false,
       },
     ]);
   }, [setElements]);
-  
+
+  // Function to update element style
   const updateElementStyle = useCallback((id, newStyle) => {
     setElements((prevElements) =>
       prevElements.map((element) => {
@@ -74,6 +63,7 @@ const Canvas = ({ elements, setElements }) => {
     );
   }, [setElements]);
 
+  // Function to update selected state of element
   const updateElementSelected = useCallback((id, selected) => {
     setElements((prevElements) =>
       prevElements.map((element) =>
@@ -82,6 +72,7 @@ const Canvas = ({ elements, setElements }) => {
     );
   }, [setElements]);
 
+  // Function to handle style change of an element
   const handleStyleChange = useCallback((e, property) => {
     const value = e.target.value;
     if (selectedElementId) {
@@ -122,6 +113,7 @@ const Canvas = ({ elements, setElements }) => {
     }
   }, [selectedElementId, elements, updateElementStyle]);
 
+  // Function to handle color change
   const handleColorChange = useCallback((e) => {
     const value = e.target.value;
     if (selectedElementId) {
@@ -129,6 +121,7 @@ const Canvas = ({ elements, setElements }) => {
     }
   }, [selectedElementId, updateElementStyle]);
 
+  // Function to handle mouse down event for resizing
   const handleMouseDown = useCallback((e, direction) => {
     e.preventDefault();
     e.stopPropagation();
@@ -137,6 +130,7 @@ const Canvas = ({ elements, setElements }) => {
     setResizeStart({ x: e.clientX, y: e.clientY });
   }, []);
 
+  // Function to handle mouse move event for resizing
   const handleMouseMove = useCallback((e) => {
     if (resizing && selectedElementId) {
       const deltaX = e.clientX - resizeStart.x;
@@ -199,6 +193,7 @@ const Canvas = ({ elements, setElements }) => {
     }
   }, [resizing, selectedElementId, resizeDirection, resizeStart, elements, updateElementStyle]);
 
+  // Function to handle mouse up event for resizing
   const handleMouseUp = useCallback(() => {
     setResizing(false);
     setResizeDirection(null);
@@ -231,8 +226,27 @@ const Canvas = ({ elements, setElements }) => {
     };
   }, [resizing, handleMouseMove, handleMouseUp, selectedElementId, updateElementSelected]);
 
+  // Function to handle keydown event for deleting the selected element and adding new rectangle
+  const handleKeyDown = useCallback((e) => {
+    if (e.key === 'Delete' && selectedElementId) {
+      setElements((prevElements) =>
+        prevElements.filter((element) => element.id !== selectedElementId)
+      );
+      setSelectedElementId(null);
+    } else if (e.key === 'r') {
+      addElement();
+    }
+  }, [selectedElementId, setElements, addElement]);
+
+  useEffect(() => {
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [handleKeyDown]);
+
   return (
-    <div ref={canvasRef} className="relative h-full w-full border border-gray-200" style={{ position: 'relative' }}>
+    <div ref={canvasRef} className="relative h-full w-full" style={{ position: 'relative' }}>
       {elements.map((element) => (
         <Draggable
           key={element.id}
@@ -252,9 +266,6 @@ const Canvas = ({ elements, setElements }) => {
               cursor: resizing ? 'default' : 'move',
               border: element.style.border,
               boxShadow: element.style.boxShadow,
-              color: element.style.color,
-              fontSize: element.style.fontSize,
-              fontFamily: element.style.fontFamily,
               backgroundColor: element.type === 'text' ? 'transparent' : element.style.backgroundColor,
               textAlign: 'center',
               lineHeight: element.style.height, // Center the text vertically
@@ -314,50 +325,16 @@ const Canvas = ({ elements, setElements }) => {
         </Draggable>
       ))}
 
-      <button onClick={() => addElement('rectangle')} className="absolute bottom-5 left-5 p-2 bg-green-500 text-white">
+      <button onClick={addElement} className="absolute bottom-5 left-5 p-2 bg-green-500 text-white">
         Add Rectangle
-      </button>
-      <button onClick={() => addElement('text')} className="absolute bottom-5 left-40 p-2 bg-purple-500 text-white">
-        Add Text
       </button>
 
       {selectedElementId && (
         <div
           ref={panelRef}
-          className="absolute top-0 right-0 h-full p-4 bg-gray-100 border border-gray-300 z-10"
+          className="absolute top-0 right-0 h-full p-4 bg-gray-100 z-10"
         >
           <h3 className="text-lg font-bold mb-2">Properties</h3>
-          {elements.find((e) => e.id === selectedElementId)?.type === 'text' ? (
-            <>
-              <label className="block mb-2">
-                Font Size:
-                <input
-                  type="text"
-                  value={elements.find((e) => e.id === selectedElementId)?.style.fontSize || '16px'}
-                  onChange={(e) => handleStyleChange(e, 'fontSize')}
-                  className="ml-2 border border-gray-300 p-1"
-                />
-              </label>
-              <label className="block mb-2">
-                Font Family:
-                <input
-                  type="text"
-                  value={elements.find((e) => e.id === selectedElementId)?.style.fontFamily || 'Arial'}
-                  onChange={(e) => handleStyleChange(e, 'fontFamily')}
-                  className="ml-2 border border-gray-300 p-1"
-                />
-              </label>
-              <label className="block mb-2">
-                Font Color:
-                <input
-                  type="color"
-                  value={elements.find((e) => e.id === selectedElementId)?.style.color || '#000000'}
-                  onChange={(e) => handleStyleChange(e, 'color')}
-                  className="ml-2"
-                />
-              </label>
-            </>
-          ) : (
             <>
               <label className="block mb-2">
                 Width:
@@ -450,7 +427,7 @@ const Canvas = ({ elements, setElements }) => {
                 />
               </label>
             </>
-          )}
+          
         </div>
       )}
     </div>

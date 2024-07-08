@@ -9,14 +9,14 @@ function App() {
 
   return (
     <div className="App flex flex-col h-screen bg-[#1E1E1E]">
-      <header className="App-header p-4 bg-gray-200">
-        <h1 className="text-3xl">Dezlopers :- <span className='text-base font-bold'>Designers who are also Devlopers</span></h1>
+      <header className="App-header p-4 bg-[#2C2C2C] shadow-2xl">
+        <h1 className="text-3xl text-[#b1adad]">Dezlopers</h1>
       </header>
-      <div className="flex flex-1 w-full">
+      <div className="flex h-screen overflow-hidden w-full">
+          <LiveCode elements={elements} />
         <ErrorBoundary>
           <Canvas elements={elements} setElements={setElements} />
           </ErrorBoundary>
-          <LiveCode elements={elements} />
         </div>
     </div>
   );

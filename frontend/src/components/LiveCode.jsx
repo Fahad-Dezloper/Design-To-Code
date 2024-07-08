@@ -20,9 +20,12 @@ const LiveCode = ({ elements }) => {
   };
 
   return (
-    <div className="p-4 border border-gray-300 bg-gray-100 w-[30%]">
-      <h2 className="text-xl font-bold mb-2">Live Code</h2>
-      <pre className="text-wrap text-sm whitespace-pre-wrap">{generateHTML()}</pre>
+    <div className="p-4 flex flex-col gap-4 bg-[#2C2C2C] shadow-2xl w-[25%]">
+      <div>
+      <h2 className="text-xl font-bold mb-2 text-[#b1adad]">Live Code</h2>
+      <hr />
+      </div>
+      <pre className="text-wrap text-sm whitespace-pre-wrap text-white">{generateHTML()}</pre>
     </div>
   );
 };
