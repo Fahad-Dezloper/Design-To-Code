@@ -10,23 +10,27 @@ const Canvas = ({ elements, setElements }) => {
   const canvasRef = useRef(null);
   const panelRef = useRef(null);
 
-  // Function to add a new rectangle element
-  const addElement = useCallback(() => {
+  // Function to add a new element (rectangle or text)
+  const addElement = useCallback((type = 'rectangle') => {
     setElements((prevElements) => [
       ...prevElements,
       {
         id: Date.now(),
-        type: 'rectangle', // Default to rectangle
+        type: type,
         style: {
           width: '100px',
           height: '100px',
           backgroundColor: '#db9b9b',
           borderRadius: '0px',
           border: '1px solid #000000',
-          boxShadow: "0px 0px 0px #000000",
+          boxShadow: '0px 0px 0px #000000',
           color: '#000000',
+          fontSize: '16px',
+          fontFamily: 'Arial',
+          textAlign: 'center',
+          lineHeight: 'normal',
         },
-        content: '', // No content for rectangle
+        content: type === 'text' ? 'Sample Text' : '', // Default content for text elements
         selected: false,
       },
     ]);
@@ -226,7 +230,7 @@ const Canvas = ({ elements, setElements }) => {
     };
   }, [resizing, handleMouseMove, handleMouseUp, selectedElementId, updateElementSelected]);
 
-  // Function to handle keydown event for deleting the selected element and adding new rectangle
+  // Function to handle keydown event for deleting the selected element and adding new elements
   const handleKeyDown = useCallback((e) => {
     if (e.key === 'Delete' && selectedElementId) {
       setElements((prevElements) =>
@@ -234,7 +238,9 @@ const Canvas = ({ elements, setElements }) => {
       );
       setSelectedElementId(null);
     } else if (e.key === 'r') {
-      addElement();
+      addElement('rectangle');
+    } else if (e.key === 't') {
+      addElement('text');
     }
   }, [selectedElementId, setElements, addElement]);
 
@@ -246,7 +252,7 @@ const Canvas = ({ elements, setElements }) => {
   }, [handleKeyDown]);
 
   return (
-    <div ref={canvasRef} className="relative h-full w-full" style={{ position: 'relative' }}>
+    <div ref={canvasRef} className="relative h-full w-full border border-gray-200" style={{ position: 'relative' }}>
       {elements.map((element) => (
         <Draggable
           key={element.id}
@@ -267,11 +273,11 @@ const Canvas = ({ elements, setElements }) => {
               border: element.style.border,
               boxShadow: element.style.boxShadow,
               backgroundColor: element.type === 'text' ? 'transparent' : element.style.backgroundColor,
-              textAlign: 'center',
-              lineHeight: element.style.height, // Center the text vertically
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
+              textAlign: element.style.textAlign,
+              lineHeight: element.style.lineHeight,
+              fontSize: element.style.fontSize,
+              fontFamily: element.style.fontFamily,
+              color: element.style.color,
               overflow: 'hidden',
             }}
             onClick={(e) => {
@@ -325,109 +331,142 @@ const Canvas = ({ elements, setElements }) => {
         </Draggable>
       ))}
 
-      <button onClick={addElement} className="absolute bottom-5 left-5 p-2 bg-green-500 text-white">
+      <button onClick={() => addElement('rectangle')} className="absolute bottom-5 left-5 p-2 bg-green-500 text-white">
         Add Rectangle
+      </button>
+      <button onClick={() => addElement('text')} className="absolute bottom-5 left-24 p-2 bg-blue-500 text-white">
+        Add Text
       </button>
 
       {selectedElementId && (
         <div
           ref={panelRef}
-          className="absolute top-0 right-0 h-full p-4 bg-gray-100 z-10"
+          className="absolute top-0 right-0 h-full p-4 bg-gray-100 border border-gray-300 z-10"
         >
           <h3 className="text-lg font-bold mb-2">Properties</h3>
-            <>
-              <label className="block mb-2">
-                Width:
-                <input
-                  type="text"
-                  value={elements.find((e) => e.id === selectedElementId)?.style.width || '100px'}
-                  onChange={(e) => handleStyleChange(e, 'width')}
-                  className="ml-2 border border-gray-300 p-1"
-                />
-              </label>
-              <label className="block mb-2">
-                Height:
-                <input
-                  type="text"
-                  value={elements.find((e) => e.id === selectedElementId)?.style.height || '100px'}
-                  onChange={(e) => handleStyleChange(e, 'height')}
-                  className="ml-2 border border-gray-300 p-1"
-                />
-              </label>
-              <label className="block mb-2">
-                Background Color:
-                <input
-                  type="color"
-                  value={elements.find((e) => e.id === selectedElementId)?.style.backgroundColor || '#0000ff'}
-                  onChange={handleColorChange}
-                  className="ml-2"
-                />
-              </label>
-              <label className="block mb-2">
-                Border Radius:
-                <input
-                  type="text"
-                  value={elements.find((e) => e.id === selectedElementId)?.style.borderRadius || '0px'}
-                  onChange={(e) => handleStyleChange(e, 'borderRadius')}
-                  className="ml-2 border border-gray-300 p-1"
-                />
-              </label>
-              <label className="block mb-2">
-                Stroke Width:
-                <input
-                  type="text"
-                  value={elements.find((e) => e.id === selectedElementId)?.style.border.split(' ')[0] || '1px'}
-                  onChange={(e) => handleStyleChange(e, 'border-width')}
-                  className="ml-2 border border-gray-300 p-1"
-                />
-              </label>
-              <label className="block mb-2">
-                Stroke Color:
-                <input
-                  type="color"
-                  value={elements.find((e) => e.id === selectedElementId)?.style.border.split(' ')[2] || '#000000'}
-                  onChange={(e) => handleStyleChange(e, 'border-color')}
-                  className="ml-2"
-                />
-              </label>
-              <label className="block mb-2">
-                Box Shadow X:
-                <input
-                  type="text"
-                  value={elements.find((e) => e.id === selectedElementId)?.style.boxShadow.split(' ')[0] || '0px'}
-                  onChange={(e) => handleStyleChange(e, 'box-shadow-x')}
-                  className="ml-2 border border-gray-300 p-1"
-                />
-              </label>
-              <label className="block mb-2">
-                Box Shadow Y:
-                <input
-                  type="text"
-                  value={elements.find((e) => e.id === selectedElementId)?.style.boxShadow.split(' ')[1] || '0px'}
-                  onChange={(e) => handleStyleChange(e, 'box-shadow-y')}
-                  className="ml-2 border border-gray-300 p-1"
-                />
-              </label>
-              <label className="block mb-2">
-                Box Shadow Blur:
-                <input
-                  type="text"
-                  value={elements.find((e) => e.id === selectedElementId)?.style.boxShadow.split(' ')[2] || '0px'}
-                  onChange={(e) => handleStyleChange(e, 'box-shadow-blur')}
-                  className="ml-2 border border-gray-300 p-1"
-                />
-              </label>
-              <label className="block mb-2">
-                Box Shadow Color:
-                <input
-                  type="color"
-                  value={elements.find((e) => e.id === selectedElementId)?.style.boxShadow.split(' ')[3] || '#000000'}
-                  onChange={(e) => handleStyleChange(e, 'box-shadow-color')}
-                  className="ml-2"
-                />
-              </label>
-            </>
-          
+          <>
+            <label className="block mb-2">
+              Width:
+              <input
+                type="text"
+                value={elements.find((e) => e.id === selectedElementId)?.style.width || '100px'}
+                onChange={(e) => handleStyleChange(e, 'width')}
+                className="ml-2 border border-gray-300 p-1"
+              />
+            </label>
+            <label className="block mb-2">
+              Height:
+              <input
+                type="text"
+                value={elements.find((e) => e.id === selectedElementId)?.style.height || '100px'}
+                onChange={(e) => handleStyleChange(e, 'height')}
+                className="ml-2 border border-gray-300 p-1"
+              />
+            </label>
+            <label className="block mb-2">
+              Background Color:
+              <input
+                type="color"
+                value={elements.find((e) => e.id === selectedElementId)?.style.backgroundColor || '#0000ff'}
+                onChange={handleColorChange}
+                className="ml-2"
+              />
+            </label>
+            <label className="block mb-2">
+              Border Radius:
+              <input
+                type="text"
+                value={elements.find((e) => e.id === selectedElementId)?.style.borderRadius || '0px'}
+                onChange={(e) => handleStyleChange(e, 'borderRadius')}
+                className="ml-2 border border-gray-300 p-1"
+              />
+            </label>
+            <label className="block mb-2">
+              Stroke Width:
+              <input
+                type="text"
+                value={elements.find((e) => e.id === selectedElementId)?.style.border.split(' ')[0] || '1px'}
+                onChange={(e) => handleStyleChange(e, 'border-width')}
+                className="ml-2 border border-gray-300 p-1"
+              />
+            </label>
+            <label className="block mb-2">
+              Stroke Color:
+              <input
+                type="color"
+                value={elements.find((e) => e.id === selectedElementId)?.style.border.split(' ')[2] || '#000000'}
+                onChange={(e) => handleStyleChange(e, 'border-color')}
+                className="ml-2"
+              />
+            </label>
+            <label className="block mb-2">
+              Box Shadow X:
+              <input
+                type="text"
+                value={elements.find((e) => e.id === selectedElementId)?.style.boxShadow.split(' ')[0] || '0px'}
+                onChange={(e) => handleStyleChange(e, 'box-shadow-x')}
+                className="ml-2 border border-gray-300 p-1"
+              />
+            </label>
+            <label className="block mb-2">
+              Box Shadow Y:
+              <input
+                type="text"
+                value={elements.find((e) => e.id === selectedElementId)?.style.boxShadow.split(' ')[1] || '0px'}
+                onChange={(e) => handleStyleChange(e, 'box-shadow-y')}
+                className="ml-2 border border-gray-300 p-1"
+              />
+            </label>
+            <label className="block mb-2">
+              Box Shadow Blur:
+              <input
+                type="text"
+                value={elements.find((e) => e.id === selectedElementId)?.style.boxShadow.split(' ')[2] || '0px'}
+                onChange={(e) => handleStyleChange(e, 'box-shadow-blur')}
+                className="ml-2 border border-gray-300 p-1"
+              />
+            </label>
+            <label className="block mb-2">
+              Box Shadow Color:
+              <input
+                type="color"
+                value={elements.find((e) => e.id === selectedElementId)?.style.boxShadow.split(' ')[3] || '#000000'}
+                onChange={(e) => handleStyleChange(e, 'box-shadow-color')}
+                className="ml-2"
+              />
+            </label>
+            {selectedElementId && elements.find((e) => e.id === selectedElementId)?.type === 'text' && (
+              <>
+                <label className="block mb-2">
+                  Font Size:
+                  <input
+                    type="text"
+                    value={elements.find((e) => e.id === selectedElementId)?.style.fontSize || '16px'}
+                    onChange={(e) => handleStyleChange(e, 'fontSize')}
+                    className="ml-2 border border-gray-300 p-1"
+                  />
+                </label>
+                <label className="block mb-2">
+                  Font Family:
+                  <input
+                    type="text"
+                    value={elements.find((e) => e.id === selectedElementId)?.style.fontFamily || 'Arial'}
+                    onChange={(e) => handleStyleChange(e, 'fontFamily')}
+                    className="ml-2 border border-gray-300 p-1"
+                  />
+                </label>
+                <label className="block mb-2">
+                  Text Color:
+                  <input
+                    type="color"
+                    value={elements.find((e) => e.id === selectedElementId)?.style.color || '#000000'}
+                    onChange={(e) => handleStyleChange(e, 'color')}
+                    className="ml-2"
+                  />
+                </label>
+              </>
+            )}
+          </>
         </div>
       )}
     </div>

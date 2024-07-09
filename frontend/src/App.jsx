@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import Canvas from './components/Canvas';
 import LiveCode from './components/LiveCode';
+import { Analytics } from "@vercel/analytics/react"
 import './index.css';
 import ErrorBoundary from './components/ErrorBoundary';
 
@@ -13,6 +14,7 @@ function App() {
         <h1 className="text-3xl text-[#b1adad]">Dezlopers</h1>
       </header>
       <div className="flex h-screen overflow-hidden w-full">
+      <Analytics/>
           <LiveCode elements={elements} />
         <ErrorBoundary>
           <Canvas elements={elements} setElements={setElements} />
