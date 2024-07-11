@@ -1,40 +1,93 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import Draggable from 'react-draggable';
-import ErrorBoundary from './ErrorBoundary'; // Import ErrorBoundary
+import ErrorBoundary from '../components/ErrorBoundary'; // Import ErrorBoundary
 
 const Canvas = ({ elements, setElements }) => {
   const [selectedElementId, setSelectedElementId] = useState(null);
   const [resizing, setResizing] = useState(false);
   const [resizeDirection, setResizeDirection] = useState(null);
+  const [editingTextId, setEditingTextId] = useState(null);
   const [resizeStart, setResizeStart] = useState({ x: 0, y: 0 });
+  const [guides, setGuides] = useState([]);
   const canvasRef = useRef(null);
   const panelRef = useRef(null);
 
   // Function to add a new element (rectangle or text)
-  const addElement = useCallback((type = 'rectangle') => {
-    setElements((prevElements) => [
-      ...prevElements,
-      {
-        id: Date.now(),
-        type: type,
-        style: {
-          width: '100px',
-          height: '100px',
-          backgroundColor: '#db9b9b',
-          borderRadius: '0px',
-          border: '1px solid #000000',
-          boxShadow: '0px 0px 0px #000000',
-          color: '#000000',
-          fontSize: '16px',
-          fontFamily: 'Arial',
-          textAlign: 'center',
-          lineHeight: 'normal',
-        },
-        content: type === 'text' ? 'Sample Text' : '', // Default content for text elements
-        selected: false,
-      },
-    ]);
-  }, [setElements]);
+  // Function to add a new element (rectangle or text)
+const addElement = useCallback((type = 'rectangle') => {
+  const defaultStyle = {
+    backgroundColor: '#db9b9b',
+    borderRadius: '0px',
+    border: '1px solid #000000',
+    boxShadow: '0px 0px 0px #000000',
+    color: '#000000',
+    fontSize: '16px',
+    fontFamily: 'Arial',
+    textAlign: 'center',
+    lineHeight: 'normal',
+  };
+
+  if (type === 'rectangle') {
+    defaultStyle.width = '100px';
+    defaultStyle.height = '100px';
+  }
+
+  setElements((prevElements) => [
+    ...prevElements,
+    {
+      id: Date.now(),
+      type: type,
+      style: defaultStyle,
+      content: type === 'text' ? '' : '', // Default content for text elements
+      selected: false,
+    },
+  ]);
+}, [setElements]);
+
+// Smart guide
+const calculateGuides = () => {
+  const newGuides = [];
+  const elements = elementsRef.current; // Use a ref to avoid issues with stale state
+
+  elements.forEach((element) => {
+    const rect = element.getBoundingClientRect();
+
+    // Center guides
+    newGuides.push({
+      type: 'vertical',
+      position: rect.left + rect.width / 2,
+    });
+    newGuides.push({
+      type: 'horizontal',
+      position: rect.top + rect.height / 2,
+    });
+
+    // Edge guides
+    newGuides.push({
+      type: 'vertical',
+      position: rect.left,
+    });
+    newGuides.push({
+      type: 'vertical',
+      position: rect.left + rect.width,
+    });
+    newGuides.push({
+      type: 'horizontal',
+      position: rect.top,
+    });
+    newGuides.push({
+      type: 'horizontal',
+      position: rect.top + rect.height,
+    });
+  });
+
+  setGuides(newGuides);
+};
+
+const elementsRef = useRef([]);
+
+
+  
 
   // Function to update element style
   const updateElementStyle = useCallback((id, newStyle) => {
@@ -232,6 +285,10 @@ const Canvas = ({ elements, setElements }) => {
 
   // Function to handle keydown event for deleting the selected element and adding new elements
   const handleKeyDown = useCallback((e) => {
+    // Check if the target element is an input field
+    if (e.target.tagName.toLowerCase() === 'input') {
+      return;
+    }
     if (e.key === 'Delete' && selectedElementId) {
       setElements((prevElements) =>
         prevElements.filter((element) => element.id !== selectedElementId)
@@ -270,7 +327,7 @@ const Canvas = ({ elements, setElements }) => {
             style={{
               ...element.style,
               cursor: resizing ? 'default' : 'move',
-              border: element.style.border,
+              border: element.selected ? '1px solid black' : 'none',
               boxShadow: element.style.boxShadow,
               backgroundColor: element.type === 'text' ? 'transparent' : element.style.backgroundColor,
               textAlign: element.style.textAlign,
@@ -279,6 +336,7 @@ const Canvas = ({ elements, setElements }) => {
               fontFamily: element.style.fontFamily,
               color: element.style.color,
               overflow: 'hidden',
+              display: element.type === 'text' ? 'inline-block' : 'block',
             }}
             onClick={(e) => {
               e.stopPropagation();
@@ -287,42 +345,83 @@ const Canvas = ({ elements, setElements }) => {
                 updateElementSelected(element.id, true);
               }
             }}
+            onDoubleClick={(e) => {
+              if (element.type === 'text') {
+                setEditingTextId(element.id);
+              }
+            }}            
           >
-            {element.type === 'text' ? element.content : null}
+            {element.type === 'text' ? (
+      editingTextId === element.id ? (
+        <input
+          type="text"
+          value={element.content}
+          onChange={(e) => {
+            const newContent = e.target.value;
+            setElements((prevElements) =>
+              prevElements.map((el) =>
+                el.id === element.id ? { ...el, content: newContent } : el
+              )
+            );
+          }}
+          onBlur={() => setEditingTextId(null)}
+          autoFocus
+          style={{
+            fontSize: element.style.fontSize,
+            fontFamily: element.style.fontFamily,
+            color: element.style.color,
+            backgroundColor: 'transparent',
+            border: 'none',
+            outline: 'none',
+            width: '100%',
+          }}
+        />
+      ) : (
+        <div
+          style={{
+            fontSize: element.style.fontSize,
+            fontFamily: element.style.fontFamily,
+            color: element.style.color,
+          }}
+        >
+          {element.content || 'Start typing...'}
+        </div>
+      )
+    ) : null}
 
             {/* Resize Handles */}
             {element.selected && (
               <>
                 <div
-                  className="resize-handle absolute right-0 top-1/2 transform translate-y-[-50%] w-2 h-2 bg-blue-500 rounded-full cursor-ew-resize"
+                  className="resize-handle absolute right-0 top-1/2 transform translate-y-[-50%] w-1 h-1 bg-blue-500 rounded-full cursor-ew-resize"
                   onMouseDown={(e) => handleMouseDown(e, 'right')}
                 />
                 <div
-                  className="resize-handle absolute bottom-0 left-1/2 transform translate-x-[-50%] w-2 h-2 bg-blue-500 rounded-full cursor-ns-resize"
+                  className="resize-handle absolute bottom-0 left-1/2 transform translate-x-[-50%] w-1 h-1 bg-blue-500 rounded-full cursor-ns-resize"
                   onMouseDown={(e) => handleMouseDown(e, 'bottom')}
                 />
                 <div
-                  className="resize-handle absolute left-0 top-1/2 transform translate-y-[-50%] w-2 h-2 bg-blue-500 rounded-full cursor-ew-resize"
+                  className="resize-handle absolute left-0 top-1/2 transform translate-y-[-50%] w-1 h-1 bg-blue-500 rounded-full cursor-ew-resize"
                   onMouseDown={(e) => handleMouseDown(e, 'left')}
                 />
                 <div
-                  className="resize-handle absolute top-0 left-1/2 transform translate-x-[-50%] w-2 h-2 bg-blue-500 rounded-full cursor-ns-resize"
+                  className="resize-handle absolute top-0 left-1/2 transform translate-x-[-50%] w-1 h-1 bg-blue-500 rounded-full cursor-ns-resize"
                   onMouseDown={(e) => handleMouseDown(e, 'top')}
                 />
                 <div
-                  className="resize-handle absolute right-0 bottom-0 w-2 h-2 bg-blue-500 rounded-full cursor-se-resize"
+                  className="resize-handle absolute right-0 bottom-0 w-1 h-1 bg-blue-500 rounded-full cursor-se-resize"
                   onMouseDown={(e) => handleMouseDown(e, 'bottom-right')}
                 />
                 <div
-                  className="resize-handle absolute left-0 bottom-0 w-2 h-2 bg-blue-500 rounded-full cursor-sw-resize"
+                  className="resize-handle absolute left-0 bottom-0 w-1 h-1 bg-blue-500 rounded-full cursor-sw-resize"
                   onMouseDown={(e) => handleMouseDown(e, 'bottom-left')}
                 />
                 <div
-                  className="resize-handle absolute left-0 top-0 w-2 h-2 bg-blue-500 rounded-full cursor-nw-resize"
+                  className="resize-handle absolute left-0 top-0 w-1 h-1 bg-blue-500 rounded-full cursor-nw-resize"
                   onMouseDown={(e) => handleMouseDown(e, 'top-left')}
                 />
                 <div
-                  className="resize-handle absolute right-0 top-0 w-2 h-2 bg-blue-500 rounded-full cursor-ne-resize"
+                  className="resize-handle absolute right-0 top-0 w-1 h-1 bg-blue-500 rounded-full cursor-ne-resize"
                   onMouseDown={(e) => handleMouseDown(e, 'top-right')}
                 />
               </>
